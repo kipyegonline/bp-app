@@ -4,12 +4,37 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && next export",
     "start": "next start"
   },
   "dependencies": {
+    "@material-ui/core": "^4.11.0",
+    "@material-ui/icons": "^4.9.1",
+    "@material-ui/lab": "^4.0.0-alpha.56",
+    "axios": "^0.21.0",
+    "d3": "^6.2.0",
     "next": "10.0.1",
     "react": "17.0.1",
-    "react-dom": "17.0.1"
+    "react-dom": "17.0.1",
+    "tailwindcss": "^1.9.6",
+    "typeface-raleway": "0.0.75",
+    "typeface-roboto": "0.0.75",
+    "uuid": "^8.3.1"
+  },
+  "devDependencies": {
+    "@types/d3": "^6.2.0",
+    "@types/node": "^14.14.13",
+    "@types/react": "^17.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.9.1",
+    "@typescript-eslint/parser": "^4.9.1",
+    "eslint": "^7.15.0",
+    "eslint-config-prettier": "^7.0.0",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.0",
+    "eslint-plugin-react": "^7.21.5",
+    "postcss": "^8.1.7",
+    "postcss-preset-env": "^6.7.0",
+    "prettier": "^2.2.1",
+    "typescript": "^4.0.5"
   }
 }
