@@ -11,6 +11,7 @@ import {
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import axios from "axios";
+import { v4 } from "uuid";
 import React from "react";
 import Layout from "../components/ui/Layout";
 
@@ -84,6 +85,7 @@ export default function AddDoctor(): React.ReactNode {
           doctorPhone,
           doctorEmail,
           doctorPassword,
+          uuid: v4(),
         })
         .then((res) => {
           const { data } = res;
@@ -110,14 +112,15 @@ export default function AddDoctor(): React.ReactNode {
         })
         .finally(() => {
           console.log("finally");
+          setTimeout(() => setError(""), 3000);
         });
     } else {
-      setError("Error adding doctor...Try again later.");
+      setError("Error adding doctor... Try again later.");
     }
   };
   return (
     <Layout>
-      <Grid container spacing={4}>
+      <Grid container spacing={4} className="py-3">
         <Grid item xs={12} md={12} lg={12}>
           <Card className="p-4 m-4" style={{ maxWidth: 600, margin: "auto" }}>
             <form onSubmit={handleSubmit} className="p-4">

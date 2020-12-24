@@ -2,14 +2,16 @@ import React from "react";
 import { Container } from "@material-ui/core";
 import Header from "./Head";
 import Footer from "./Footer";
+import Nav from "./Nav";
 
-type Layout = { children: React.ReactChild; title?: string };
+type Layout = { children: React.ReactNode; title?: string };
 
 function Layout({ children, title }: Layout): React.ReactElement {
   return (
     <>
       <Container className="layout">
         <Header title={title} />
+        <Nav />
         {children}
 
         <style jsx global>{`
