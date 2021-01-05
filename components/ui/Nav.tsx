@@ -6,7 +6,7 @@ export default function Nav() {
   return (
     <div>
       <AppBar position="relative" color="transparent">
-        <List className="flex justify-between">
+        <List className="flex justify-center flex-no-wrap ">
           <ListItem>
             <Link href="/">
               <a href="#">Home</a>
@@ -23,8 +23,8 @@ export default function Nav() {
             </Link>
           </ListItem>
           <ListItem>
-            <Link href="/patients">
-              <a href="#">Patients</a>
+            <Link href="/daily-readings">
+              <a href="#">Add Readings</a>
             </Link>
           </ListItem>
           <ListItem>

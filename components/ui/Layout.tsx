@@ -3,7 +3,7 @@ import { Container } from "@material-ui/core";
 import Header from "./Head";
 import Footer from "./Footer";
 import Nav from "./Nav";
-
+import Drawer from "./sideNav";
 type Layout = { children: React.ReactNode; title?: string };
 
 function Layout({ children, title }: Layout): React.ReactElement {
@@ -12,6 +12,7 @@ function Layout({ children, title }: Layout): React.ReactElement {
       <Container className="layout">
         <Header title={title} />
         <Nav />
+        <Drawer />
         {children}
 
         <style jsx global>{`
@@ -22,7 +23,7 @@ function Layout({ children, title }: Layout): React.ReactElement {
           body {
             background: #ccc;
             width: 90%;
-            padding: 1rem;
+            padding: 0 1rem;
             margin: 0 auto;
             font-family: roboto;
           }
