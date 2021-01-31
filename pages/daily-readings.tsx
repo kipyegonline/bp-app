@@ -14,6 +14,7 @@ import {
   Radio,
   FormControl,
   FormLabel,
+  CircularProgress,
 } from "@material-ui/core";
 import FormGroup from "@material-ui/core/FormGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
@@ -28,12 +29,15 @@ const timeOfDay: { time: string; id: number; checked: boolean }[] = [
 ];
 export default function DailyReadings(): React.ReactNode {
   const [systoleErr, setSytoleErr] = React.useState("");
+  const [error, setError] = React.useState("");
+  const [success, setSucces] = React.useState("");
   const [diaErr, setdiaErr] = React.useState("");
   const [systole, setSystole] = React.useState<number | string>("");
   const [diastole, setDiastole] = React.useState<number | string>("");
   const [heartbeat, setHeartbeat] = React.useState<number | string>("");
   const [date, setDate] = React.useState<string>("");
   const [moment, setMoment] = React.useState(timeOfDay);
+  const [spinner, setSpinner] = React.useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
@@ -45,8 +49,17 @@ export default function DailyReadings(): React.ReactNode {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log({ systole, diastole, heartbeat, date });
-    if (Number(systole) > 0 && +diastole > 0 && +heartbeat > 0 && date.length) {
+    const timeofday = moment.find((item) => item.checked)?.id;
+
+    if (
+      Number(systole) > 0 &&
+      +diastole > 0 &&
+      +heartbeat > 0 &&
+      date.length &&
+      timeofday
+    ) {
       //send to server
+      setSpinner(true);
       axios
         .post("add-readings", {
           diastole,
@@ -54,24 +67,29 @@ export default function DailyReadings(): React.ReactNode {
           heartbeat,
           addedon: new Date().toLocaleDateString(),
           date,
-          timeofday: moment.find((item) => item.checked)?.id,
+          timeofday,
         })
         .then((res) => {
           const { data } = res;
           if (data.status === 200) {
             console.log(res);
+            setSucces(data.msg);
+            setSystole("");
+            setDiastole("");
+            setHeartbeat("");
+            setDate("");
+            setMoment("");
           } else {
             throw new Error(data.msg);
           }
+        })
+        .catch((error) => setError(error.message))
+        .finally(() => {
+          setSpinner(false);
+          setTimeout(() => setError(""), 5000);
         });
-      setTimeout(() => {
-        setSystole("");
-        setDiastole("");
-        setHeartbeat("");
-        setDate("");
-      }, 5000);
     } else {
-      throw new TypeError("NaN");
+      setError("Some field(s) are missing.");
     }
   };
   const handleBlurs = (event: React.FocusEvent<HTMLInputElement>) => {
@@ -97,6 +115,21 @@ export default function DailyReadings(): React.ReactNode {
       )
     );
   };
+  const handleDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const target = e.target as HTMLInputElement;
+    if (new Date(target.value) > new Date()) {
+      setDate("");
+      return setError("Oops, We are not on that date yet..");
+    } else {
+      setError("");
+      setDate(target.value);
+    }
+  };
+  const spinnerEl = (
+    <div className="mx-auto p-2 text-center">
+      <CircularProgress color="primary" size="2rem" />
+    </div>
+  );
   const btns = (
     <FormControl component="fieldset" className="my-4">
       <FormLabel component="legend" disabled>
@@ -140,7 +173,7 @@ export default function DailyReadings(): React.ReactNode {
                   type="date"
                   className="mx-auto my-4 p-2"
                   helperText="Choose date"
-                  onChange={(e) => setDate(e?.target?.value)}
+                  onChange={handleDate}
                   value={date}
                 />
                 {date && btns}
@@ -189,13 +222,28 @@ export default function DailyReadings(): React.ReactNode {
                 />
               </div>
               <Box className="mt-4">
+                {error && (
+                  <Typography variant="body1" className="p-1 m-2  text-red-600">
+                    {error}
+                  </Typography>
+                )}
+                {success && (
+                  <Typography
+                    variant="body1"
+                    className="p-1 m-2  text-green-600"
+                  >
+                    {success}
+                  </Typography>
+                )}
+                {spinner && spinnerEl}
                 <Button
                   type="submit"
                   variant="contained"
-                  className="w-full "
+                  className="w-full my-4"
                   color="primary"
+                  disabled={spinner}
                 >
-                  Add Readings
+                  Add Readings.
                 </Button>
               </Box>
             </form>

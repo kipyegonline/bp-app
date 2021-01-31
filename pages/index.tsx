@@ -58,7 +58,7 @@ export default function Home(): React.ReactNode {
       .then((res) => {
         const { data } = res;
         if (!Array.isArray(data) || !res.data.length) {
-          throw new Error("No patient assigned");
+          throw new TypeError("No patient assigned");
         }
         setPatients(data);
       })
@@ -77,6 +77,7 @@ export default function Home(): React.ReactNode {
       <CircularProgress color="primary" size="3rem" />
     </div>
   );
+
   return (
     <Layout>
       <Grid
@@ -100,10 +101,10 @@ export default function Home(): React.ReactNode {
       </Grid>
       <Box>
         <Card>
-          {patients.length ? (
+          {pat.length ? (
             <Card>
               <TablePatients
-                patients={patients.slice(start, end)}
+                patients={pat.slice(start, end)}
                 sendClicked={handleClick}
                 counter={start}
               />
@@ -160,3 +161,18 @@ const pat = [...Array(20)].map((item, i) => ({
   patient_email: "vinnykipx@gmail.com",
   patient_location: "Litein",
 }));
+/*
+export const getStaticProps = async () => {
+  try {
+    let pats = await fetch("/fetch-doctors");
+    pats = await pats.json();
+    return {
+      props: {
+        pats,
+      },
+    };
+  } catch (error) {
+    throw new ReferenceError(error.message);
+  }
+};
+*/

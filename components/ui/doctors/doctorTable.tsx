@@ -126,10 +126,10 @@ const DBody = ({
 }: DoctorInt & Index) => (
   <TableRow>
     <TableCell>{index + 1}</TableCell>
-    <TableCell>{doctor_name}</TableCell>
-    <TableCell>{doctor_phone}</TableCell>
-    <TableCell>{doctor_email}</TableCell>
-    <TableCell>{doctor_title}</TableCell>
+    <TableCell>{doctor}</TableCell>
+    <TableCell>{phone}</TableCell>
+    <TableCell>{email}</TableCell>
+    <TableCell>{title}</TableCell>
     <TableCell>
       <EditIcon color="primary" onClick={() => sendEdit(id)} />|
       <DeleteIcon color="secondary" onClick={() => sendDelete(id)} />

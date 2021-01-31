@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 import Link from "next/link";
-import Layout from "../components/Layout";
+
 import {
   Container,
   Button,
