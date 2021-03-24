@@ -40,7 +40,7 @@ export default function AddPatient(): React.ReactNode {
   const fetchDoctors = async () => {
     try {
       const res = await axios.get("/fetch-doctors");
-      console.log(res);
+
       if (res.data) {
         setDoctors(res.data);
       }
@@ -185,9 +185,13 @@ export default function AddPatient(): React.ReactNode {
       <CircularProgress color="primary" size="3rem" />
     </div>
   );
+  const closeModal = () => {
+    console.log("close modal");
+  };
   const ShowSideB = (
     <UseDialog
       open={sideB}
+      handleClose={closeModal}
       title={`Assign doctor and choose initial password for ${
         patientName.value.split(" ")[0]
       }`}
@@ -360,11 +364,17 @@ type UseModalProps = {
   open: boolean;
   title: string;
   children: React.ReactChild;
+  handleClose: () => void;
 };
 
-export const UseDialog = ({ open, title, children }: UseModalProps) => {
+export const UseDialog = ({
+  open,
+  title,
+  children,
+  handleClose,
+}: UseModalProps) => {
   return (
-    <Dialog open={open}>
+    <Dialog onClose={handleClose} open={open}>
       <DialogTitle className=" p-4 bg-blue-600 text-white">{title}</DialogTitle>
       <DialogContent>{children}</DialogContent>
     </Dialog>

@@ -5,9 +5,11 @@ import {
   InputLabel,
   Grid,
   Input,
+  Box,
   Typography,
   makeStyles,
   FormHelperText,
+  CircularProgress,
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import axios from "axios";
@@ -29,6 +31,7 @@ export default function AddDoctor(): React.ReactNode {
   const classes: ReturnType<typeof useStyles> = useStyles();
   const [errmsg, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
+  const [spinner, setSpinner] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -78,6 +81,7 @@ export default function AddDoctor(): React.ReactNode {
       doctorPassword.length > 5
     ) {
       setError("");
+      setSpinner(true);
       axios
         .post("/add-doctor", {
           doctorName,
@@ -91,28 +95,28 @@ export default function AddDoctor(): React.ReactNode {
           const { data } = res;
           if (data.status === 200) {
             setSuccess(data.msg);
-            setTimeout(() => {
-              resetDoctor();
-              resetTitle();
-              resetPhone();
-              resetEmail();
-              resetPassword();
-              resetConfPassword();
-            }, 5000);
+
+            resetDoctor();
+            resetTitle();
+            resetPhone();
+            resetEmail();
+            resetPassword();
+            resetConfPassword();
           } else {
             throw new Error(data.msg);
           }
-
-          console.log(data);
         })
         .catch((error) => {
           setError(error.message);
-          setSuccess("");
+
           setTimeout(() => setError(""), 3000);
         })
         .finally(() => {
-          console.log("finally");
-          setTimeout(() => setError(""), 3000);
+          setSpinner(false);
+          setTimeout(() => {
+            setSuccess("");
+            setError("");
+          }, 3000);
         });
     } else {
       setError("Error adding doctor... Try again later.");
@@ -144,6 +148,11 @@ export default function AddDoctor(): React.ReactNode {
                 props={confPassword}
               />
               <div className="my-2 p-1 ">
+                {spinner && (
+                  <Box className="text-center mx-auto">
+                    <CircularProgress size="3rem" color="primary" />
+                  </Box>
+                )}
                 {errmsg && (
                   <FormHelperText className="center" error>
                     {errmsg}
@@ -151,7 +160,10 @@ export default function AddDoctor(): React.ReactNode {
                 )}
                 {success && (
                   <Alert severity="success" variant="filled">
-                    <FormHelperText> {success}</FormHelperText>
+                    <FormHelperText className="text-white">
+                      {" "}
+                      {success}
+                    </FormHelperText>
                   </Alert>
                 )}
               </div>
@@ -160,9 +172,10 @@ export default function AddDoctor(): React.ReactNode {
                 className={classes.btn}
                 size="medium"
                 variant="contained"
+                disabled={spinner}
                 color="primary"
               >
-                Add Doctor
+                {spinner ? "Adding doctor" : "Add Doctor"}
               </Button>
             </form>
           </Card>

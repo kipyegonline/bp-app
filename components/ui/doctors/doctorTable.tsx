@@ -117,10 +117,10 @@ const DTable: React.FC<{
 const DBody = ({
   id,
   index,
-  doctor_name,
-  doctor_phone,
-  doctor_email,
-  doctor_title,
+  doctor,
+  phone,
+  email,
+  title,
   sendEdit = (f) => f,
   sendDelete = (f) => f,
 }: DoctorInt & Index) => (

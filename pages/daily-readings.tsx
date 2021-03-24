@@ -15,18 +15,33 @@ import {
   FormControl,
   FormLabel,
   CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  LinearProgress,
 } from "@material-ui/core";
+import axios from "axios";
+import Router from "next/router";
 import FormGroup from "@material-ui/core/FormGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
-import axios from "axios";
+
 import React from "react";
 import Layout from "../components/ui/Layout";
+import { ArrowRight, CheckCircleRounded } from "@material-ui/icons";
+import { Alert } from "@material-ui/lab";
 
 const timeOfDay: { time: string; id: number; checked: boolean }[] = [
   { time: "Morning", id: 1, checked: false },
   { time: "Evening", id: 2, checked: false },
   { time: "Whole day", id: 3, checked: false },
 ];
+
+type Symptoms = { id: number; symptom: string; clicked: boolean };
+
 export default function DailyReadings(): React.ReactNode {
   const [systoleErr, setSytoleErr] = React.useState("");
   const [error, setError] = React.useState("");
@@ -35,9 +50,28 @@ export default function DailyReadings(): React.ReactNode {
   const [systole, setSystole] = React.useState<number | string>("");
   const [diastole, setDiastole] = React.useState<number | string>("");
   const [heartbeat, setHeartbeat] = React.useState<number | string>("");
+  const [meals, setMeal] = React.useState("");
+  const [stressed, setStressed] = React.useState(false);
   const [date, setDate] = React.useState<string>("");
+  const [symptoms, setSymptoms] = React.useState<Symptoms[]>([]);
   const [moment, setMoment] = React.useState(timeOfDay);
   const [spinner, setSpinner] = React.useState(false);
+  const [dspinner, setDspinner] = React.useState(false);
+  const [section, setSection] = React.useState(1);
+  const [modal, setModal] = React.useState(section === 1);
+
+  const fetchSymptoms = async () => {
+    try {
+      const res = await axios.get("/fetch-symptoms");
+
+      setSymptoms(
+        res.data.map((item: Symptoms) => ({ ...item, clicked: false }))
+      );
+    } catch (error) {
+      setSymptoms(syms);
+      console.log(error.message);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
@@ -46,11 +80,41 @@ export default function DailyReadings(): React.ReactNode {
       setSytoleErr("Enter a proper number");
     else setState(+target.value);
   };
+
+  const handleDuplicates = () => {
+    const selectedMoment = moment.find((item) => item.checked);
+    if (selectedMoment?.checked && date) {
+      setDspinner(true);
+      let id = 1;
+
+      axios
+        .get(`/check-duplicates/${id}/${selectedMoment?.id}/${date}`)
+        .then((res) => {
+          console.log(res);
+          const { data } = res;
+          if (!data) {
+            setModal(false);
+            setSection(2);
+          } else {
+            throw new ReferenceError(
+              `You have already added readings for ${date} (${selectedMoment?.time})`
+            );
+          }
+          // setModal(false);
+        })
+        .catch((error) => {
+          setDspinner(false);
+          setError(error.message);
+        });
+      // .finally(() => setTimeout(() => setError(""), 3000));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log({ systole, diastole, heartbeat, date });
-    const timeofday = moment.find((item) => item.checked)?.id;
 
+    const timeofday = moment.find((item) => item.checked)?.id;
+    if (Number(systole) > 120 && section < 3) return setSection(3);
     if (
       Number(systole) > 0 &&
       +diastole > 0 &&
@@ -58,27 +122,54 @@ export default function DailyReadings(): React.ReactNode {
       date.length &&
       timeofday
     ) {
+      const selectedSymptoms = symptoms
+        .filter((item) => item.clicked)
+        .map((item) => item.id)
+        .join("*");
+      /* delete this on prod */
+      console.log({
+        diastole,
+        systole,
+        uuid: 1,
+        heartbeat,
+        addedon: new Date().toLocaleDateString(),
+        date,
+        timeofday,
+        symptoms: selectedSymptoms,
+        meals,
+      });
       //send to server
       setSpinner(true);
       axios
         .post("add-readings", {
           diastole,
           systole,
+          uuid: 1,
           heartbeat,
           addedon: new Date().toLocaleDateString(),
           date,
           timeofday,
+          symptoms: selectedSymptoms,
+          meals,
+          stressed,
         })
         .then((res) => {
           const { data } = res;
           if (data.status === 200) {
             console.log(res);
             setSucces(data.msg);
+            setSection(5);
             setSystole("");
             setDiastole("");
             setHeartbeat("");
+
+            setMeal("");
             setDate("");
-            setMoment("");
+            setMoment(moment.map((item) => ({ ...item, checked: false })));
+            setSymptoms(
+              symptoms.map((item: Symptoms) => ({ ...item, clicked: false }))
+            );
+            //setTimeout(() => setSucces(""), 3000);
           } else {
             throw new Error(data.msg);
           }
@@ -86,26 +177,21 @@ export default function DailyReadings(): React.ReactNode {
         .catch((error) => setError(error.message))
         .finally(() => {
           setSpinner(false);
-          setTimeout(() => setError(""), 5000);
+          setTimeout(() => {
+            setError("");
+          }, 3000);
         });
     } else {
       setError("Some field(s) are missing.");
+      setTimeout(() => {
+        setError("");
+      }, 3000);
     }
   };
   const handleBlurs = (event: React.FocusEvent<HTMLInputElement>) => {
     const target = event.target as HTMLInputElement;
   };
 
-  /*
-          <Button
-            key={item.id}
-            variant={item.checked ? "contained" : "outlined"}
-            size="small"
-            className="mr-10"
-            color="primary"
-          >
-            {item.time}
-          </Button>*/
   const handleChecks = (id: number) => {
     setMoment(
       moment.map((item) =>
@@ -119,17 +205,52 @@ export default function DailyReadings(): React.ReactNode {
     const target = e.target as HTMLInputElement;
     if (new Date(target.value) > new Date()) {
       setDate("");
-      return setError("Oops, We are not on that date yet..");
+      return setError("Invalid date, We're not yet there.....");
     } else {
       setError("");
       setDate(target.value);
     }
+  };
+  const handleSymptoms = (id: number) => {
+    // check if symptom has already been clikcked
+    const alreadyClicked = symptoms.find(
+      (item) => item.id === id && item.clicked
+    );
+
+    // serios ternary operator
+    alreadyClicked?.id
+      ? setSymptoms(
+          symptoms.map((item) =>
+            item.id === id ? { ...item, clicked: false } : item
+          )
+        )
+      : setSymptoms(
+          symptoms.map((item) =>
+            item.id === id ? { ...item, clicked: true } : item
+          )
+        );
+  };
+
+  const handleModal = () => {
+    setMoment(moment.map((item) => ({ ...item, checked: false })));
+    setModal(false);
+    Router.push("/");
   };
   const spinnerEl = (
     <div className="mx-auto p-2 text-center">
       <CircularProgress color="primary" size="2rem" />
     </div>
   );
+  /*The damn hook */
+  React.useEffect(() => {
+    fetchSymptoms();
+
+    window.addEventListener("online", () => console.log("you're online"));
+    window.addEventListener("offline", () => console.log("you're offline"));
+  }, []);
+  const visible = moment.some((item) => item.checked);
+  let BpJsx = null;
+  // freadings btns
   const btns = (
     <FormControl component="fieldset" className="my-4">
       <FormLabel component="legend" disabled>
@@ -154,6 +275,178 @@ export default function DailyReadings(): React.ReactNode {
       </FormGroup>
     </FormControl>
   );
+
+  const DateReadings = (
+    <Dialog open={modal} className="p-4">
+      <DialogTitle>Choose date</DialogTitle>
+      <DialogContent>
+        <TextField
+          type="date"
+          className="mx-auto my-4 p-2"
+          helperText="Choose date"
+          onChange={handleDate}
+          value={date}
+        />
+        <Box>{date && btns}</Box>
+        {dspinner && <LinearProgress color="primary" />}
+        {error && (
+          <Typography variant="body1" className="p-2 m-2  text-red-600">
+            {error}
+          </Typography>
+        )}
+
+        <DialogActions>
+          {dspinner ? (
+            <Typography variant="body1" className="text-green-500">
+              Checking details....
+            </Typography>
+          ) : (
+            <Button color="secondary" variant="contained" onClick={handleModal}>
+              Close
+            </Button>
+          )}
+          {!dspinner && (
+            <Button
+              color="primary"
+              disabled={!moment.some((item) => item.checked)}
+              onClick={handleDuplicates}
+              variant="contained"
+            >
+              Continue
+            </Button>
+          )}
+        </DialogActions>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const BpReadings = (
+    <>
+      <TextField
+        type="text"
+        label="Systole"
+        onBlur={handleBlurs}
+        helperText={systoleErr}
+        // error={!!systoleErr}
+        value={systole}
+        placeholder="Enter upper reading"
+        id="Systole"
+        margin="dense"
+        variant="outlined"
+        size="small"
+        onChange={handleChange}
+        className="m-3 p-2 w-full"
+      />
+
+      <TextField
+        type="text"
+        label="Diastole"
+        placeholder="Enter lower reading"
+        margin="dense"
+        id="Diastole"
+        variant="outlined"
+        size="small"
+        onChange={handleChange}
+        value={diastole}
+        className="m-3 p-2 w-full"
+        error={!!diaErr}
+      />
+
+      <TextField
+        type="text"
+        id="Heartbeat"
+        margin="dense"
+        placeholder="Enter heartbeat"
+        label="Heartbeart"
+        variant="filled"
+        size="small"
+        value={heartbeat}
+        onChange={handleChange}
+        className="m-3 p-2 w-full"
+      />
+    </>
+  );
+
+  const BpSymptoms = (
+    <Box>
+      {!!symptoms.length && (
+        <UserSymptoms symptoms={symptoms} sendClicked={handleSymptoms} />
+      )}
+      <Button
+        variant="outlined"
+        color="primary"
+        style={{ width: "100%" }}
+        onClick={() => setSection(4)}
+        endIcon={<ArrowRight />}
+      >
+        Next
+      </Button>
+    </Box>
+  );
+  const BPMeals = (
+    <div>
+      <Divider />
+      <FormControlLabel
+        name="Feeling unwell or stressful day?"
+        label="Feeling unwell or having a stressful day?"
+        control={
+          <Checkbox
+            value={stressed}
+            checked={stressed}
+            onChange={(e) => setStressed(e.target.checked)}
+          />
+        }
+      />
+
+      <Divider />
+      <TextField
+        type="text"
+        id="Meal"
+        margin="dense"
+        placeholder=""
+        variant="outlined"
+        helperText="Did you eat/drink something unusual today?"
+        multiline
+        error={!meals}
+        rows={4}
+        value={meals.trim()}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setMeal(e.target.value)
+        }
+        className="m-3 p-2 w-full"
+      />
+    </div>
+  );
+  const BpSuccess = (
+    <Box>
+      {success && (
+        <Alert severity="success" variant="filled" className="text-white p-4">
+          {" "}
+          {success}
+        </Alert>
+      )}
+      <Button>Add another reading</Button>
+    </Box>
+  );
+  switch (section) {
+    case 1:
+      BpJsx = DateReadings;
+      break;
+    case 2:
+      BpJsx = BpReadings;
+      break;
+    case 3:
+      BpJsx = BpSymptoms;
+      break;
+    case 4:
+      BpJsx = BPMeals;
+      break;
+    case 5:
+      BpJsx = BpSuccess;
+      break;
+    default:
+      BpJsx = null;
+  }
   return (
     <Layout title="Add today's readings...">
       <Paper className="mx-5 my-3 p-4">
@@ -167,84 +460,35 @@ export default function DailyReadings(): React.ReactNode {
             title=""
           />
           <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div>
-                <TextField
-                  type="date"
-                  className="mx-auto my-4 p-2"
-                  helperText="Choose date"
-                  onChange={handleDate}
-                  value={date}
-                />
-                {date && btns}
-                <Divider className="my-4 " />
-                <TextField
-                  type="number"
-                  label="Systole"
-                  onBlur={handleBlurs}
-                  helperText={systoleErr}
-                  // error={!!systoleErr}
-                  value={systole}
-                  placeholder="Enter upper reading"
-                  id="Systole"
-                  margin="dense"
-                  variant="outlined"
-                  size="small"
-                  onChange={handleChange}
-                  className="m-3 p-2 w-full"
-                />
-
-                <TextField
-                  type="number"
-                  label="Diastole"
-                  placeholder="Enter lower reading"
-                  margin="dense"
-                  id="Diastole"
-                  variant="outlined"
-                  size="small"
-                  onChange={handleChange}
-                  value={diastole}
-                  className="m-3 p-2 w-full"
-                  error={!!diaErr}
-                />
-
-                <TextField
-                  type="number"
-                  id="Heartbeat"
-                  margin="dense"
-                  placeholder="Enter heartbeat"
-                  label="Heartbeart"
-                  variant="filled"
-                  size="small"
-                  value={heartbeat}
-                  onChange={handleChange}
-                  className="m-3 p-2 w-full"
-                />
-              </div>
+            <Typography paragraph className="p-2 font-bold">
+              {new Date(date).toDateString()}
+              {"  "} ({moment.find((item) => item.checked)?.time})
+            </Typography>
+            <form
+              onSubmit={handleSubmit}
+              style={{ visibility: visible ? "visible" : "hidden" }}
+            >
+              <div>{DateReadings}</div>
+              {BpJsx}
               <Box className="mt-4">
                 {error && (
                   <Typography variant="body1" className="p-1 m-2  text-red-600">
                     {error}
                   </Typography>
                 )}
-                {success && (
-                  <Typography
-                    variant="body1"
-                    className="p-1 m-2  text-green-600"
-                  >
-                    {success}
-                  </Typography>
-                )}
+
                 {spinner && spinnerEl}
-                <Button
-                  type="submit"
-                  variant="contained"
-                  className="w-full my-4"
-                  color="primary"
-                  disabled={spinner}
-                >
-                  Add Readings.
-                </Button>
+                {section !== 3 && (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    className="w-full my-4"
+                    color="primary"
+                    disabled={spinner}
+                  >
+                    {spinner ? "Adding Readings" : "Add Readings."}
+                  </Button>
+                )}
               </Box>
             </form>
           </CardContent>
@@ -254,3 +498,45 @@ export default function DailyReadings(): React.ReactNode {
     </Layout>
   );
 }
+
+const UserSymptoms: React.FC<{
+  symptoms: Symptoms[];
+  sendClicked: (id: number) => void;
+}> = ({ symptoms = [], sendClicked = (f) => f }) => {
+  return (
+    <>
+      <Typography align="center" className="p-2" variant="subtitle1">
+        Click on the symptoms you might be feeling
+      </Typography>
+      <List>
+        {symptoms.map((item, i) => (
+          <ListItem
+            key={item.id}
+            button
+            dense
+            className={item.clicked ? "bg-red-700" : ""}
+            selected={item.clicked}
+            onClick={() => sendClicked(item.id)}
+          >
+            <Checkbox
+              checked={item.clicked}
+              color="primary"
+              onChange={() => sendClicked(item.id)}
+            />
+            {i + 1}. {"  "}
+            {item.symptom}
+            {item.clicked && (
+              <CheckCircleRounded className="ml-5" htmlColor="green" />
+            )}
+          </ListItem>
+        ))}
+      </List>
+    </>
+  );
+};
+
+const syms = [...Array(10)].map((it, i) => ({
+  id: i + 1,
+  symptom: "Headache",
+  clicked: false,
+}));

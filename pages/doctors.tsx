@@ -35,9 +35,8 @@ export default function DoctorsPage() {
         throw new Error("No data found");
       }
     } catch (error) {
-      console.error(error.message);
-    } finally {
       setSpinner(false);
+      console.error(error.message);
     }
   };
   const handleDelete = (id: number | undefined) => {
@@ -59,7 +58,6 @@ export default function DoctorsPage() {
   };
   React.useEffect(() => {
     fetchDoctors();
-    //setTimeout(() => setDoctors(docs), 3000);
   }, []);
   const Spinner = (
     <div className="mx-auto my-4 p-4 text-center">

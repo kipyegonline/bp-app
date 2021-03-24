@@ -7,6 +7,7 @@ import {
   TableCell,
   Button,
   Link as MLink,
+  Typography,
 } from "@material-ui/core";
 import React from "react";
 import Link from "next/link";
@@ -32,6 +33,7 @@ function TablePatients({
             <TableCell>Age</TableCell>
             <TableCell>Phone</TableCell>
             <TableCell>Email</TableCell>
+            <TableCell>Doctor</TableCell>
             <TableCell>Location </TableCell>
             <TableCell>Profile</TableCell>
           </TableRow>
@@ -59,6 +61,7 @@ export type Patient = {
   patient_email?: string;
   patient_location?: string;
   altId?: string;
+  doctor_name: string;
 };
 type PatientI = Patient & I;
 
@@ -73,6 +76,7 @@ const TablePatientsRow: React.FC<PatientI> = ({
   patient_location,
   altId,
   index,
+  doctor_name,
   sendClicked,
 }) => (
   <TableRow selected>
@@ -85,6 +89,7 @@ const TablePatientsRow: React.FC<PatientI> = ({
     <TableCell align="right">{patient_age}</TableCell>
     <TableCell>{patient_phone}</TableCell>
     <TableCell>{patient_email}</TableCell>
+    <TableCell>{doctor_name}</TableCell>
     <TableCell>{patient_location} </TableCell>
     <TableCell>
       <Button
