@@ -105,20 +105,22 @@ export default function Patient() {
     try {
       // destructure payload
       const {
-        data: { symptoms, meals },
+        data: { fetchedsymptoms, meals },
       } = await axios.get(
         `/get-readings-symptoms/1/${reading.timeofday}/${reading.selecteddate}`
       );
+
       // check if payload exist
-      if (symptoms[0]?.symptoms.length) {
+      if (fetchedsymptoms[0]?.symptoms.length) {
         // destructure object from array
-        const [returnedSyms] = symptoms;
-        setMeal({ meal: meals.meals, stressed: returnedSyms.stressed });
+        const [returnedSyms] = fetchedsymptoms;
+        setMeal({ meal: meals[0]?.meals, stressed: returnedSyms.stressed });
         // make an array from the string on object by splitting the array
         const userSysms = returnedSyms.symptoms.split("*");
         // finally get the symptoms
         const syms: Symptoms[] = sortSymptoms(userSysms, symptoms);
         setUserSymptoms(syms);
+        console.log("meals and return", userSysms, syms);
       } else {
         setUserSymptoms([]);
       }

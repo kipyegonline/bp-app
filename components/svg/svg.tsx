@@ -340,3 +340,77 @@ export const setToolTip = (a: number, b: number, c: number): number => {
     return c;
   }
 };
+
+/**
+ * function createsGrid(data) {
+       var grid = gridLine.selectAll("line.horizontalGrid").data(scaleY.ticks());
+
+       grid.enter()
+       .append("line")
+       .attr("class","horizontalGrid");
+
+       grid.exit().remove();
+
+       grid.attr({
+               "x1":0,
+               "x2": width,
+               "y1": function (d) { return scaleY(d); },
+               "y2": function (d) { return scaleY(d); }
+                });
+}
+
+line.horizonalGrid{
+  fill : none;
+ shape-rendering : crispEdges;
+ stroke : black;
+ stroke-width : 1.5px;
+} 
+
+//part 2
+
+
+import {
+  axisBottom  as d3_axisBottom,
+  axisLeft    as d3_axisLeft,
+  scaleLinear as d3_scaleLinear,
+  select      as d3_select
+} from 'd3';
+const WIDTH        = 400;
+const HEIGHT       = 300;
+const MARGIN       = { top: 10, right: 10, bottom: 20, left: 30 };
+const INNER_WIDTH  = WIDTH - MARGIN.left - MARGIN.right;
+const INNER_HEIGHT = HEIGHT - MARGIN.top - MARGIN.bottom;
+const svg = d3_select('#grid').append('svg')
+  .attr('width', WIDTH)
+  .attr('height', HEIGHT)
+  .append('g')
+    .attr('transform', 'translate(' + MARGIN.left + ',' + MARGIN.top + ')');
+
+
+const x         = d3_scaleLinear().domain([0, 1]).range([0, INNER_WIDTH]);
+const y         = d3_scaleLinear().domain([0, 1]).range([INNER_HEIGHT, 0]);
+const xAxis     = d3_axisBottom(x).ticks(10);
+const yAxis     = d3_axisLeft(y).ticks(10);
+const xAxisGrid = d3_axisBottom(x).tickSize(-INNER_HEIGHT).tickFormat('').ticks(10);
+const yAxisGrid = d3_axisLeft(y).tickSize(-INNER_WIDTH).tickFormat('').ticks(10);
+
+// Create grids.
+svg.append('g')
+  .attr('class', 'x axis-grid')
+  .attr('transform', 'translate(0,' + INNER_HEIGHT + ')')
+  .call(xAxisGrid);
+svg.append('g')
+  .attr('class', 'y axis-grid')
+  .call(yAxisGrid);
+// Create axes.
+svg.append('g')
+  .attr('class', 'x axis')
+  .attr('transform', 'translate(0,' + INNER_HEIGHT + ')')
+  .call(xAxis);
+svg.append('g')
+  .attr('class', 'y axis')
+  .call(yAxis);
+.axis-grid line {
+  stroke: #def;
+}
+ */

@@ -1,12 +1,61 @@
 import React from "react";
-import { Container, Grid } from "@material-ui/core";
+import {
+  Backdrop,
+  Box,
+  CircularProgress,
+  Container,
+  Grid,
+  Typography,
+} from "@material-ui/core";
+import Router from "next/router";
 import Header from "./Head";
 import Footer from "./Footer";
 import Nav from "./Nav";
 import Drawer from "./sideNav";
+
 type Layout = { children: React.ReactNode; title?: string };
+export const getToken = () =>
+  globalThis.window &&
+  JSON.parse(localStorage.getItem("systolediastole") as any);
 
 function Layout({ children, title }: Layout): React.ReactElement {
+  const [auth, setAuth] = React.useState(getToken());
+  const [redirect, setRedirect] = React.useState("Opening....");
+
+  React.useEffect(() => {
+    console.log("running effect", auth);
+    const token = getToken();
+    console.log(token, "token");
+    if (!auth?.altId) setAuth(getToken());
+  }, []);
+
+  const Loading = () => {
+    React.useEffect(() => {
+      console.log("watching auth changes", auth);
+      const token = getToken();
+
+      if (!token?.altId) {
+        setRedirect("Redirecting to login...");
+        Router.push("/login");
+      }
+    }, [auth]);
+    return (
+      <div>
+        <Backdrop open={true}>
+          <Box>
+            <CircularProgress color="primary" size="3rem" />
+            <Typography>{redirect}</Typography>
+          </Box>
+        </Backdrop>
+      </div>
+    );
+  };
+
+  if (!globalThis.window) {
+    return <Loading />;
+  }
+
+  if (!auth?.altId) return <Loading />;
   return (
     <>
       <div className="layout">
@@ -34,7 +83,7 @@ function Layout({ children, title }: Layout): React.ReactElement {
           </Grid>
         </Grid>
         */}
-        <Drawer />
+
         {children}
         <style jsx global>{`
           html {
@@ -69,5 +118,14 @@ function Layout({ children, title }: Layout): React.ReactElement {
       <Footer />
     </>
   );
+
+  /*: (
+    <div>
+      <Backdrop open={true}>
+        <CircularProgress color="primary" />
+        <Typography>Opening....</Typography>
+      </Backdrop>
+    </div>
+  );*/
 }
 export default Layout;

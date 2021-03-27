@@ -30,8 +30,12 @@ import FormGroup from "@material-ui/core/FormGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 
 import React from "react";
-import Layout from "../components/ui/Layout";
-import { ArrowRight, CheckCircleRounded } from "@material-ui/icons";
+import Layout, { getToken } from "../components/ui/Layout";
+import {
+  ArrowRight,
+  CheckCircleRounded,
+  SystemUpdateOutlined,
+} from "@material-ui/icons";
 import { Alert } from "@material-ui/lab";
 
 const timeOfDay: { time: string; id: number; checked: boolean }[] = [
@@ -43,13 +47,14 @@ const timeOfDay: { time: string; id: number; checked: boolean }[] = [
 type Symptoms = { id: number; symptom: string; clicked: boolean };
 
 export default function DailyReadings(): React.ReactNode {
-  const [systoleErr, setSytoleErr] = React.useState("");
+  const [systoleErr, setSytoleErr] = React.useState(false);
+  const [pulseErr, setPulseErr] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSucces] = React.useState("");
-  const [diaErr, setdiaErr] = React.useState("");
-  const [systole, setSystole] = React.useState<number | string>("");
-  const [diastole, setDiastole] = React.useState<number | string>("");
-  const [heartbeat, setHeartbeat] = React.useState<number | string>("");
+  const [diaErr, setdiaErr] = React.useState(false);
+  const [systole, setSystole] = React.useState<string>("");
+  const [diastole, setDiastole] = React.useState<string>("");
+  const [heartbeat, setHeartbeat] = React.useState<string>("");
   const [meals, setMeal] = React.useState("");
   const [stressed, setStressed] = React.useState(false);
   const [date, setDate] = React.useState<string>("");
@@ -59,6 +64,7 @@ export default function DailyReadings(): React.ReactNode {
   const [dspinner, setDspinner] = React.useState(false);
   const [section, setSection] = React.useState(1);
   const [modal, setModal] = React.useState(section === 1);
+  const [visible, setVisible] = React.useState(true);
 
   const fetchSymptoms = async () => {
     try {
@@ -76,8 +82,7 @@ export default function DailyReadings(): React.ReactNode {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
     const setState = eval("set" + target.id);
-    if (Number.isNaN(Number(target.value)))
-      setSytoleErr("Enter a proper number");
+    if (Number.isNaN(Number(target.value))) setError("Enter a proper number");
     else setState(+target.value);
   };
 
@@ -85,6 +90,7 @@ export default function DailyReadings(): React.ReactNode {
     const selectedMoment = moment.find((item) => item.checked);
     if (selectedMoment?.checked && date) {
       setDspinner(true);
+      setVisible(true);
       let id = 1;
 
       axios
@@ -95,6 +101,7 @@ export default function DailyReadings(): React.ReactNode {
           if (!data) {
             setModal(false);
             setSection(2);
+            setError("");
           } else {
             throw new ReferenceError(
               `You have already added readings for ${date} (${selectedMoment?.time})`
@@ -114,7 +121,26 @@ export default function DailyReadings(): React.ReactNode {
     e.preventDefault();
 
     const timeofday = moment.find((item) => item.checked)?.id;
+    systole ? setSytoleErr(false) : setSytoleErr(true);
+    diastole ? setdiaErr(false) : setdiaErr(true);
+    heartbeat ? setPulseErr(false) : setPulseErr(true);
+    console.log(systole, diastole, heartbeat);
+    // verify sytole readings
+    if (!SystemUpdateOutlined) {
+      return setError("Enter the systole readings...");
+    }
+    // verify diastole readings
+    if (!diastole) {
+      return setError("Enter the systole readings...");
+    }
+    // verify pulse readings
+    if (!heartbeat) {
+      return setError("Enter the systole readings...");
+    }
+    // if pressure is above normal,show symptoms
     if (Number(systole) > 120 && section < 3) return setSection(3);
+    // if everythings seems good proceed
+
     if (
       Number(systole) > 0 &&
       +diastole > 0 &&
@@ -126,6 +152,7 @@ export default function DailyReadings(): React.ReactNode {
         .filter((item) => item.clicked)
         .map((item) => item.id)
         .join("*");
+      const { altId } = getToken();
       /* delete this on prod */
       console.log({
         diastole,
@@ -138,13 +165,13 @@ export default function DailyReadings(): React.ReactNode {
         symptoms: selectedSymptoms,
         meals,
       });
-      //send to server
+      //send to server  via axios
       setSpinner(true);
       axios
         .post("add-readings", {
           diastole,
           systole,
-          uuid: 1,
+          uuid: altId,
           heartbeat,
           addedon: new Date().toLocaleDateString(),
           date,
@@ -155,7 +182,8 @@ export default function DailyReadings(): React.ReactNode {
         })
         .then((res) => {
           const { data } = res;
-          if (data.status === 200) {
+          // status property is set manually by dev on server
+          if (data?.status === 200) {
             console.log(res);
             setSucces(data.msg);
             setSection(5);
@@ -190,6 +218,11 @@ export default function DailyReadings(): React.ReactNode {
   };
   const handleBlurs = (event: React.FocusEvent<HTMLInputElement>) => {
     const target = event.target as HTMLInputElement;
+    if (target.value) {
+      if (target.id === "Systole") return setSytoleErr(false);
+      if (target.id === "Diastole") return setdiaErr(false);
+      if (target.id === "Heartbeat") return setPulseErr(false);
+    }
   };
 
   const handleChecks = (id: number) => {
@@ -248,7 +281,7 @@ export default function DailyReadings(): React.ReactNode {
     window.addEventListener("online", () => console.log("you're online"));
     window.addEventListener("offline", () => console.log("you're offline"));
   }, []);
-  const visible = moment.some((item) => item.checked);
+
   let BpJsx = null;
   // freadings btns
   const btns = (
@@ -326,7 +359,7 @@ export default function DailyReadings(): React.ReactNode {
         type="text"
         label="Systole"
         onBlur={handleBlurs}
-        helperText={systoleErr}
+        error={systoleErr}
         // error={!!systoleErr}
         value={systole}
         placeholder="Enter upper reading"
@@ -335,12 +368,14 @@ export default function DailyReadings(): React.ReactNode {
         variant="outlined"
         size="small"
         onChange={handleChange}
+        required
         className="m-3 p-2 w-full"
       />
 
       <TextField
         type="text"
         label="Diastole"
+        onBlur={handleBlurs}
         placeholder="Enter lower reading"
         margin="dense"
         id="Diastole"
@@ -349,19 +384,23 @@ export default function DailyReadings(): React.ReactNode {
         onChange={handleChange}
         value={diastole}
         className="m-3 p-2 w-full"
-        error={!!diaErr}
+        required
+        error={diaErr}
       />
 
       <TextField
         type="text"
         id="Heartbeat"
+        onBlur={handleBlurs}
         margin="dense"
         placeholder="Enter heartbeat"
         label="Heartbeart"
         variant="filled"
         size="small"
         value={heartbeat}
+        required
         onChange={handleChange}
+        error={pulseErr}
         className="m-3 p-2 w-full"
       />
     </>
@@ -409,7 +448,7 @@ export default function DailyReadings(): React.ReactNode {
         multiline
         error={!meals}
         rows={4}
-        value={meals.trim()}
+        value={meals}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
           setMeal(e.target.value)
         }
@@ -420,12 +459,18 @@ export default function DailyReadings(): React.ReactNode {
   const BpSuccess = (
     <Box>
       {success && (
-        <Alert severity="success" variant="filled" className="text-white p-4">
+        <Alert
+          severity="success"
+          variant="filled"
+          className="text-white p-4 my-2"
+        >
           {" "}
           {success}
         </Alert>
       )}
-      <Button>Add another reading</Button>
+      <Button variant="outlined" color="secondary">
+        Add another reading
+      </Button>
     </Box>
   );
   switch (section) {
@@ -445,8 +490,10 @@ export default function DailyReadings(): React.ReactNode {
       BpJsx = BpSuccess;
       break;
     default:
-      BpJsx = null;
+      BpJsx = BpSuccess;
+      break;
   }
+
   return (
     <Layout title="Add today's readings...">
       <Paper className="mx-5 my-3 p-4">
@@ -461,15 +508,18 @@ export default function DailyReadings(): React.ReactNode {
           />
           <CardContent>
             <Typography paragraph className="p-2 font-bold">
-              {new Date(date).toDateString()}
-              {"  "} ({moment.find((item) => item.checked)?.time})
+              {date ? new Date(date).toDateString() : new Date().toDateString()}
+              {"  "} {` (${moment.find((item) => item.checked)?.time})`}
             </Typography>
             <form
+              noValidate
+              autoComplete="off"
               onSubmit={handleSubmit}
               style={{ visibility: visible ? "visible" : "hidden" }}
             >
               <div>{DateReadings}</div>
               {BpJsx}
+
               <Box className="mt-4">
                 {error && (
                   <Typography variant="body1" className="p-1 m-2  text-red-600">

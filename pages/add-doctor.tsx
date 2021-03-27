@@ -10,6 +10,8 @@ import {
   makeStyles,
   FormHelperText,
   CircularProgress,
+  FormControlLabel,
+  Checkbox,
 } from "@material-ui/core";
 import { Alert } from "@material-ui/lab";
 import axios from "axios";
@@ -29,6 +31,7 @@ export default function AddDoctor(): React.ReactNode {
   const [password, resetPassword] = useInput("");
   const [confPassword, resetConfPassword] = useInput("");
   const classes: ReturnType<typeof useStyles> = useStyles();
+  const [admin, setAdmin] = React.useState(false);
   const [errmsg, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
   const [spinner, setSpinner] = React.useState(false);
@@ -90,6 +93,7 @@ export default function AddDoctor(): React.ReactNode {
           doctorEmail,
           doctorPassword,
           uuid: v4(),
+          isAdmin: admin,
         })
         .then((res) => {
           const { data } = res;
@@ -102,6 +106,7 @@ export default function AddDoctor(): React.ReactNode {
             resetEmail();
             resetPassword();
             resetConfPassword();
+            setAdmin(false);
           } else {
             throw new Error(data.msg);
           }
@@ -146,6 +151,18 @@ export default function AddDoctor(): React.ReactNode {
                 label="Confirm Password"
                 type="password"
                 props={confPassword}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={admin}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setAdmin(e.target.checked)
+                    }
+                  />
+                }
+                name="Admin"
+                label="Grant admin rights?"
               />
               <div className="my-2 p-1 ">
                 {spinner && (

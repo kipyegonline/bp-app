@@ -113,7 +113,7 @@ function Login() {
             globalThis &&
               localStorage.setItem("systolediastole", JSON.stringify(data));
 
-            Router.push("/");
+            data?.doctor ? Router.push("/") : Router.push("/daily-readings");
           } else {
             throw new Error(data.msg);
           }
@@ -177,6 +177,7 @@ function Login() {
               className={classes.input}
               color="primary"
               type="submit"
+              disabled={spinner}
             >
               {spinner ? "Logging in " : "Log in"}
             </Button>
