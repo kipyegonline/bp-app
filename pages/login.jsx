@@ -134,7 +134,7 @@ function Login() {
   return (
     <Grid className={classes.logincontainer}>
       <Head>
-        <title>Login | Comms App </title>
+        <title>Login | BP App </title>
         <meta
           name="viewport"
           content="initial-scale=1.0, width=device-width"
@@ -146,7 +146,7 @@ function Login() {
           BP App
         </Typography>
         <Divider />
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate autoComplete="off">
           <CardContent style={{ maxWidth: 500 }}>
             <FormControl className={classes.input}>
               <InputLabel error={!!emailerr.length}>

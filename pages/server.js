@@ -1,3 +1,4 @@
+/*
 import express from "express";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
@@ -72,3 +73,6 @@ function Main() {
 }
 
 ReactDOM.hydrate(<Main />, document.querySelector('#root'));*/
+export default function Server() {
+  return <p>Server...</p>;
+}

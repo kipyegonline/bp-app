@@ -198,7 +198,11 @@ export default function AddPatient(): React.ReactNode {
     >
       <Box>
         {!!doctors.length && (
-          <SelectInput doctors={doctors} getDoctor={setDoctor} />
+          <SelectInput
+            doctors={doctors}
+            getDoctor={setDoctor}
+            title="Assign doctor"
+          />
         )}
         <InputEl
           label="Enter Password"
@@ -331,7 +335,12 @@ type Select = {
 export const SelectInput: React.FC<{
   doctors: Docs[];
   getDoctor: (value: number) => void;
-}> = ({ doctors = [], getDoctor = (f: number) => f }) => {
+  title: string;
+}> = ({
+  doctors = [],
+  getDoctor = (f: number) => f,
+  title = "Select Doctor",
+}) => {
   const [selected, setSelected] = React.useState(0);
   const handleSelect = (
     e: React.ChangeEvent<{ name?: string | undefined; value: unknown }>
@@ -343,7 +352,7 @@ export const SelectInput: React.FC<{
   };
   return (
     <FormControl className="w-100 p-4 my-4">
-      <InputLabel id="assign-doc">Assign Doctor</InputLabel>
+      <InputLabel id="assign-doc">{title}</InputLabel>
       <Select
         id="assign-doc"
         style={{ minWidth: 150 }}

@@ -23,15 +23,11 @@ function Layout({ children, title }: Layout): React.ReactElement {
   const [redirect, setRedirect] = React.useState("Opening....");
 
   React.useEffect(() => {
-    console.log("running effect", auth);
-    const token = getToken();
-    console.log(token, "token");
     if (!auth?.altId) setAuth(getToken());
   }, []);
 
   const Loading = () => {
     React.useEffect(() => {
-      console.log("watching auth changes", auth);
       const token = getToken();
 
       if (!token?.altId) {

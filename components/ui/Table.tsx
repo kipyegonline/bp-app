@@ -11,6 +11,9 @@ import {
 } from "@material-ui/core";
 import React from "react";
 import Link from "next/link";
+import Add from "@material-ui/icons/Add";
+import Router from "next/router";
+import { getToken } from "./Layout";
 
 type TablePatients = {
   patients: Patient[];
@@ -32,9 +35,10 @@ function TablePatients({
             <TableCell>Name</TableCell>
             <TableCell>Age</TableCell>
             <TableCell>Phone</TableCell>
-            <TableCell>Email</TableCell>
+
             <TableCell>Doctor</TableCell>
-            <TableCell>Location </TableCell>
+
+            <TableCell>Add readings </TableCell>
             <TableCell>Profile</TableCell>
           </TableRow>
         </TableHead>
@@ -61,6 +65,7 @@ export type Patient = {
   patient_email?: string;
   patient_location?: string;
   altId?: string;
+  doc_altId: string;
   doctor_name: string;
 };
 type PatientI = Patient & I;
@@ -77,6 +82,7 @@ const TablePatientsRow: React.FC<PatientI> = ({
   altId,
   index,
   doctor_name,
+  doc_altId,
   sendClicked,
 }) => (
   <TableRow selected>
@@ -88,9 +94,25 @@ const TablePatientsRow: React.FC<PatientI> = ({
     </TableCell>
     <TableCell align="right">{patient_age}</TableCell>
     <TableCell>{patient_phone}</TableCell>
-    <TableCell>{patient_email}</TableCell>
-    <TableCell>{doctor_name}</TableCell>
-    <TableCell>{patient_location} </TableCell>
+
+    <TableCell>
+      {getToken()?.altId === doc_altId ? "You" : doctor_name}
+    </TableCell>
+
+    <TableCell>
+      <Button
+        color="secondary"
+        variant="outlined"
+        size="small"
+        startIcon={<Add color="secondary" />}
+        onClick={() => Router.push(`/daily-readings?user=${altId}`)}
+      >
+        {" "}
+        <Link href={`/daily-readings?user=${altId}`} as="user-readings">
+          <a>Add</a>
+        </Link>
+      </Button>
+    </TableCell>
     <TableCell>
       <Button
         color="primary"

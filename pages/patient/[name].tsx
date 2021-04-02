@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 import Router, { useRouter } from "next/router";
-import Layout from "../../components/ui/Layout";
+import Layout, { getToken } from "../../components/ui/Layout";
 import { Skeleton } from "@material-ui/lab";
 import { getWidth, getHeight } from "../../components/svg/helpers";
 import Line, { BpToolTip } from "../../components/svg/line";
@@ -30,6 +30,7 @@ type Readings = {
   selecteddate: string;
   timeofday: string;
 };
+
 type Symptoms = { id: number; symptom: string };
 type UserSymptoms = {
   id: number;
@@ -51,6 +52,10 @@ export default function Patient() {
   const [meal, setMeal] = React.useState<{ meal?: string; stressed?: number }>(
     {}
   );
+  const [otherReadins, setOthers] = React.useState<{
+    evening: Readings;
+    whole: Readings;
+  }>({});
   const [profile, setProfile] = React.useState<Profile>({});
   const [spinner, setSpinner] = React.useState(false);
 
@@ -59,7 +64,10 @@ export default function Patient() {
   // user symptoms
   const [userSymptoms, setUserSymptoms] = React.useState<UserSymptoms[]>([]);
 
-  const route = useRouter();
+  const {
+    query: { name },
+  } = useRouter();
+
   // readings
   const fetchReadings = async (slug: string) => {
     try {
@@ -67,9 +75,10 @@ export default function Patient() {
       const {
         data: { readings, profile },
       } = await axios.get(`/fetch-readings/${slug}`);
-      if (profile?.name) {
+      if (profile?.name) setProfile(profile);
+
+      if (readings.length) {
         setReadings(readings);
-        setProfile(profile);
       } else {
         throw new ReferenceError("User readings not found");
       }
@@ -105,11 +114,15 @@ export default function Patient() {
     try {
       // destructure payload
       const {
-        data: { fetchedsymptoms, meals },
+        data: { fetchedsymptoms, meals, evening, whole },
       } = await axios.get(
-        `/get-readings-symptoms/1/${reading.timeofday}/${reading.selecteddate}`
+        `/get-readings-symptoms/${name}/${reading.timeofday}/${reading.selecteddate}`
       );
-
+      // evening or whole day reads
+      setOthers({
+        evening: evening.length ? evening : {},
+        whole: whole.length ? whole : {},
+      });
       // check if payload exist
       if (fetchedsymptoms[0]?.symptoms.length) {
         // destructure object from array
@@ -120,7 +133,6 @@ export default function Patient() {
         // finally get the symptoms
         const syms: Symptoms[] = sortSymptoms(userSysms, symptoms);
         setUserSymptoms(syms);
-        console.log("meals and return", userSysms, syms);
       } else {
         setUserSymptoms([]);
       }
@@ -150,9 +162,6 @@ export default function Patient() {
     // fetch symptoms
     fetchSymptoms();
     // destructure the slug from url query param
-    const {
-      query: { name },
-    } = route;
 
     if (name && name !== "bp-app") {
       localStorage.setItem("current-reading", name) as any;
@@ -163,7 +172,7 @@ export default function Patient() {
       fetchReadings(name);
     }
   }, []);
-
+  console.log("other readings", otherReadins);
   return (
     <Layout>
       <Grid
@@ -207,6 +216,7 @@ export default function Patient() {
               <SymptomsList
                 symptoms={userSymptoms}
                 meal={meal}
+                others={otherReadins}
                 profile={profile}
               />
             </>
@@ -254,8 +264,10 @@ function BpSlider({ data }) {
 
 const SymptomsList: React.FC<{
   symptoms: Symptoms[];
-  meal: { meal: string; stressed: number; profile: Profile };
-}> = ({ symptoms = [], meal = {}, profile = {} }) => (
+  meal: { meal: string; stressed: number };
+  profile: Profile;
+  others: { evening: Readings; whole: Readings };
+}> = ({ symptoms = [], meal = {}, profile = {}, others = {} }) => (
   <Card>
     <CardContent>
       <Typography variant="h6">{profile.name}</Typography>

@@ -25,7 +25,7 @@ import {
   LinearProgress,
 } from "@material-ui/core";
 import axios from "axios";
-import Router from "next/router";
+import Router, { useRouter } from "next/router";
 import FormGroup from "@material-ui/core/FormGroup";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 
@@ -50,7 +50,7 @@ export default function DailyReadings(): React.ReactNode {
   const [systoleErr, setSytoleErr] = React.useState(false);
   const [pulseErr, setPulseErr] = React.useState(false);
   const [error, setError] = React.useState("");
-  const [success, setSucces] = React.useState("");
+  const [success, setSucces] = React.useState("starting");
   const [diaErr, setdiaErr] = React.useState(false);
   const [systole, setSystole] = React.useState<string>("");
   const [diastole, setDiastole] = React.useState<string>("");
@@ -65,6 +65,10 @@ export default function DailyReadings(): React.ReactNode {
   const [section, setSection] = React.useState(1);
   const [modal, setModal] = React.useState(section === 1);
   const [visible, setVisible] = React.useState(true);
+  const [userProfile, setUser] = React.useState({});
+  const {
+    query: { user },
+  } = useRouter();
 
   const fetchSymptoms = async () => {
     try {
@@ -91,16 +95,20 @@ export default function DailyReadings(): React.ReactNode {
     if (selectedMoment?.checked && date) {
       setDspinner(true);
       setVisible(true);
-      let id = 1;
+      setError("");
+      const { altId } = getToken();
+      const id = user ? user : altId;
 
       axios
         .get(`/check-duplicates/${id}/${selectedMoment?.id}/${date}`)
         .then((res) => {
           console.log(res);
-          const { data } = res;
-          if (!data) {
+          const [duplicated, profile] = res.data;
+          if (!duplicated && profile?.id) {
+            setSucces("");
             setModal(false);
             setSection(2);
+            setUser(profile);
             setError("");
           } else {
             throw new ReferenceError(
@@ -128,14 +136,20 @@ export default function DailyReadings(): React.ReactNode {
     // verify sytole readings
     if (!SystemUpdateOutlined) {
       return setError("Enter the systole readings...");
+      setTimeout(() => setError(""), 3000);
+      return false;
     }
     // verify diastole readings
     if (!diastole) {
-      return setError("Enter the systole readings...");
+      setError("Enter the systole readings...");
+      setTimeout(() => setError(""), 3000);
+      return false;
     }
     // verify pulse readings
     if (!heartbeat) {
       return setError("Enter the systole readings...");
+      setTimeout(() => setError(""), 3000);
+      return false;
     }
     // if pressure is above normal,show symptoms
     if (Number(systole) > 120 && section < 3) return setSection(3);
@@ -165,13 +179,14 @@ export default function DailyReadings(): React.ReactNode {
         symptoms: selectedSymptoms,
         meals,
       });
+      setError("");
       //send to server  via axios
       setSpinner(true);
       axios
         .post("add-readings", {
           diastole,
           systole,
-          uuid: altId,
+          uuid: user ? user : altId,
           heartbeat,
           addedon: new Date().toLocaleDateString(),
           date,
@@ -179,6 +194,7 @@ export default function DailyReadings(): React.ReactNode {
           symptoms: selectedSymptoms,
           meals,
           stressed,
+          addedBy: user ? user : "self",
         })
         .then((res) => {
           const { data } = res;
@@ -236,7 +252,7 @@ export default function DailyReadings(): React.ReactNode {
   };
   const handleDate = (e: React.ChangeEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
-    if (new Date(target.value) > new Date()) {
+    if (new Date(target.value).getDate() > new Date().getDate()) {
       setDate("");
       return setError("Invalid date, We're not yet there.....");
     } else {
@@ -269,11 +285,24 @@ export default function DailyReadings(): React.ReactNode {
     setModal(false);
     Router.push("/");
   };
+
+  const handleAnother = () => {
+    setSucces("");
+
+    setUser({});
+    if (user) {
+      Router.push("/");
+    } else {
+      location.reload();
+    }
+    setSection(1);
+  };
   const spinnerEl = (
     <div className="mx-auto p-2 text-center">
       <CircularProgress color="primary" size="2rem" />
     </div>
   );
+
   /*The damn hook */
   React.useEffect(() => {
     fetchSymptoms();
@@ -468,7 +497,12 @@ export default function DailyReadings(): React.ReactNode {
           {success}
         </Alert>
       )}
-      <Button variant="outlined" color="secondary">
+      <Button
+        variant="outlined"
+        color="secondary"
+        style={{ width: "100%" }}
+        onClick={handleAnother}
+      >
         Add another reading
       </Button>
     </Box>
@@ -493,7 +527,7 @@ export default function DailyReadings(): React.ReactNode {
       BpJsx = BpSuccess;
       break;
   }
-
+  console.log(!!user, "user");
   return (
     <Layout title="Add today's readings...">
       <Paper className="mx-5 my-3 p-4">
@@ -509,8 +543,13 @@ export default function DailyReadings(): React.ReactNode {
           <CardContent>
             <Typography paragraph className="p-2 font-bold">
               {date ? new Date(date).toDateString() : new Date().toDateString()}
-              {"  "} {` (${moment.find((item) => item.checked)?.time})`}
+              {"  "} {` (${moment.find((item) => item.checked)?.time || ""})`}
             </Typography>
+            {userProfile?.id && (
+              <Typography paragraph className="p-2 font-bold">
+                {userProfile.patient_name}
+              </Typography>
+            )}
             <form
               noValidate
               autoComplete="off"
@@ -535,6 +574,7 @@ export default function DailyReadings(): React.ReactNode {
                     className="w-full my-4"
                     color="primary"
                     disabled={spinner}
+                    style={{ display: success ? "none" : "block" }}
                   >
                     {spinner ? "Adding Readings" : "Add Readings."}
                   </Button>

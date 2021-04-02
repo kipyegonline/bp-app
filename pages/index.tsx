@@ -1,4 +1,5 @@
 import React from "react";
+import Router from "next/router";
 import axios from "axios";
 import {
   Card,
@@ -21,6 +22,7 @@ import {
   CardContent,
   CardActions,
   Snackbar,
+  Avatar,
 } from "@material-ui/core";
 import AccountIcon from "@material-ui/icons/AccountBoxOutlined";
 import TablePatients, { Patient } from "../components/ui/Table";
@@ -36,7 +38,7 @@ import {
   Search as SearchIcon,
   VerifiedUser,
 } from "@material-ui/icons";
-import Layout from "../components/ui/Layout";
+import Layout, { getToken } from "../components/ui/Layout";
 import { SelectInput } from "./add-patient";
 import { UseDialog } from "./add-patient";
 
@@ -55,6 +57,7 @@ export default function Home(): React.ReactNode {
   const start = current * perpage;
   const end = current * perpage + perpage;
 
+  const token = getToken();
   const handleChange = (event: React.ChangeEvent<unknown>, p: number) =>
     setCurrent(p - 1);
 
@@ -65,9 +68,11 @@ export default function Home(): React.ReactNode {
       .catch((error) => console.log(error));
   };
   const fetchPatients = async () => {
+    const { altId } = getToken();
     setSpinner(true);
     try {
-      const res = await axios.get("/fetch-patients");
+      const res = await axios.get(`/fetch-patients/${altId}`);
+      if (!res?.data.length) throw Error("No data found");
       setPatients(res.data);
       setSpinner(false);
     } catch (error) {
@@ -84,11 +89,14 @@ export default function Home(): React.ReactNode {
       .then((res) => {
         const { data } = res;
         if (!Array.isArray(data) || !res.data.length) {
-          throw new TypeError("No patient assigned");
+          throw new ReferenceError("No result for the selected doctor");
         }
         setPatients(data);
       })
-      .catch((error) => setError(error.message));
+      .catch((error) => {
+        SetResult(error.message);
+        setTimeout(() => SetResult(""), 3000);
+      });
   };
   const handleClick = (id: number) =>
     setPatient(
@@ -101,7 +109,6 @@ export default function Home(): React.ReactNode {
       axios
         .get(`/search-patient?q=${search.trim()}`)
         .then((res) => {
-          console.log(res);
           const { data } = res;
           if (Array.isArray(data) && data.length) {
             setPatients(data);
@@ -122,7 +129,7 @@ export default function Home(): React.ReactNode {
   };
 
   React.useEffect(() => {
-    Promise.all([fetchPatients(), fetchDoctors()]);
+    if (token?.doctor) Promise.all([fetchPatients(), fetchDoctors()]);
     // setTimeout(() => setPatients(pat), 3000);
   }, []);
   const SpinnerEl = (
@@ -130,6 +137,8 @@ export default function Home(): React.ReactNode {
       <CircularProgress color="primary" size="3rem" />
     </div>
   );
+  //Authorizatiom
+  //if (!token?.doctor) Router.push("/doctors");
 
   return (
     <Layout>
@@ -142,7 +151,14 @@ export default function Home(): React.ReactNode {
         className="p-4 mx-auto my-4"
       >
         <Grid item xs={12} lg={2} md={2}>
-          <Card>Side Menu</Card>
+          <Avatar>
+            {token?.username ? token?.username[0].toUpperCase() : "U"}
+          </Avatar>
+          <Typography>
+            {token?.title || ""}
+            {"  "}
+            {token?.username}
+          </Typography>
         </Grid>
         <Grid item xs={12} lg={8} md={8}>
           <SearchBar
@@ -162,7 +178,11 @@ export default function Home(): React.ReactNode {
         </Grid>
         <Grid item xs={12} lg={2} md={2}>
           <Card>
-            <SelectInput doctors={doctors} getDoctor={fetchDoctorPatients} />
+            <SelectInput
+              doctors={doctors}
+              getDoctor={fetchDoctorPatients}
+              title="View by doctor"
+            />
           </Card>
         </Grid>
       </Grid>
@@ -180,7 +200,7 @@ export default function Home(): React.ReactNode {
             SpinnerEl
           ) : (
             <Typography className="text-center p-4  mx-auto my-4 text-red-600 text-lg">
-              <Error color="secondary" /> No data found
+              <Error color="secondary" /> No patients assigned to you currently.
             </Typography>
           )}
 

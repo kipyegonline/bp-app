@@ -1,8 +1,14 @@
 import React from "react";
 import Link from "next/link";
-import { AppBar, List, ListItem } from "@material-ui/core";
+import { AppBar, IconButton, List, ListItem } from "@material-ui/core";
+import { ExitToApp } from "@material-ui/icons";
 
 export default function Nav() {
+  const handleLogout = () => {
+    localStorage.removeItem("systolediastole");
+    location.pathname = "/login";
+    location.reload();
+  };
   return (
     <div>
       <AppBar position="relative" color="transparent">
@@ -41,6 +47,15 @@ export default function Nav() {
             <Link href="/symptoms">
               <a href="#">Add Symptom</a>
             </Link>
+          </ListItem>
+          <ListItem>
+            <IconButton
+              onClick={handleLogout}
+              color="primary"
+              variant="outlined"
+            >
+              <ExitToApp />
+            </IconButton>
           </ListItem>
         </List>
       </AppBar>

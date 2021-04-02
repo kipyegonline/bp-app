@@ -20,6 +20,7 @@ import {
   TextArea,
   setToolTip,
 } from "./svg";
+import { node } from "prop-types";
 
 type Readings = {
   systole: number;
@@ -34,8 +35,8 @@ interface LineProps {
   getOp: (f: boolean) => boolean;
 }
 
-let fill = "blue",
-  bg = "skyblue";
+let fill = "blue";
+const bg = "skyblue";
 
 const [h, gh] = getHeight();
 const [w, gw] = getWidth();
@@ -103,7 +104,7 @@ function Line({ data, getTools, getOp, profile }: LineProps): JSX.Element {
     const max = d3.max(data, (d) => d["systole"]);
 
     xScale.domain(xtent);
-    yScale.domain([50, 200]);
+    yScale.domain([40, 200]);
     aScale.domain([0, max]);
   };
   const updateAxis = () => {
@@ -143,6 +144,29 @@ function Line({ data, getTools, getOp, profile }: LineProps): JSX.Element {
   const from = new Date(data[0]?.selecteddate).toDateString();
   const to = new Date(data[data.length - 1]?.selecteddate).toDateString();
 
+  const fdataset = forceLayout(data);
+  const force = d3
+    .forceSimulation(fdataset.nodes)
+    .force("charge", d3.forceManyBody)
+    .force("link", d3.forceLink(fdataset.edges))
+    .force(
+      "center",
+      d3
+        .forceCenter()
+        .x(gw / 2)
+        .y(gh / 2)
+    );
+
+  /*force.on("tick", function () {
+    const { edges, nodes } = fdataset;
+    edges
+      .attr("x1", (d) => d.source.x)
+      .attr("y1", (d) => d.source.y)
+      .attr("x2", (d) => d.target.x)
+      .attr("y2", (d) => d.target.y);
+    nodes.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+  });*/
+  //console.log(force, fdataset);
   return (
     <div className="relative">
       {reading?.tool && <BpToolTip payload={reading} />}
@@ -150,12 +174,40 @@ function Line({ data, getTools, getOp, profile }: LineProps): JSX.Element {
         {/*overall group */}
         <Group x={80} y={40} gw={gw} gh={gh}>
           {/*Legend*/}
-          {/*<Legend defaultData={data} color={color} />*/}
+          <Legend defaultData={info} />
 
           {data.map((d, i) => {
             setTimeout(() => updateAxis(), 100);
             return (
               <Group key={i}>
+                <PathF
+                  dataset={[
+                    { systole: 120, selecteddate: data[0]?.selecteddate },
+                    {
+                      systole: 120,
+                      selecteddate: data[data.length - 1]?.selecteddate,
+                    },
+                  ]}
+                  stroke=""
+                  strokew={1}
+                  accessor="systole"
+                  ccolor="gray"
+                />
+
+                <PathF
+                  dataset={[
+                    { systole: 80, selecteddate: data[0]?.selecteddate },
+                    {
+                      systole: 80,
+                      selecteddate: data[data.length - 1]?.selecteddate,
+                    },
+                  ]}
+                  stroke=""
+                  strokew={1}
+                  accessor="systole"
+                  ccolor="gray"
+                />
+
                 {/*Path remover*/}
                 {!lines ? (
                   <PathF
@@ -297,16 +349,16 @@ const Circles = ({
 
 const Legend = ({
   defaultData,
-  color,
 }: {
-  defaultData: Readings[];
-  color: string;
+  defaultData: { color: string; info: string; id: number }[];
 }) => (
-  <Group classlist="legend" x={30} y={140}>
+  <Group classlist="legend" x={200} y={70}>
     {defaultData.map((data, i) => (
       <Group key={data.id}>
-        <Rect width={20} fill={color(i)} y={-i * 20} height={10} />
-        <text key={i} x={25} y={-(i * 20) + 10} width={10} height={10}></text>
+        <Rect width={20} fill={data.color} y={-i * 20} height={10} />
+        <text key={i} x={25} y={-(i * 20) + 10} width={10} height={10}>
+          {data.info}
+        </text>
       </Group>
     ))}
   </Group>
@@ -317,9 +369,15 @@ type PathF = {
   stroke: string;
   strokew: number;
   accessor: string;
+  cccolor?: string;
 };
-const PathF = ({ dataset, stroke, strokew = 20, accessor }: PathF) => {
-  let ccolor = "#ccc";
+const PathF = ({
+  dataset,
+  stroke,
+  strokew = 20,
+  accessor,
+  ccolor = "#ccc",
+}: PathF) => {
   const line = d3
     .line()
     .x((d) => xScale(new Date(d["selecteddate"])))
@@ -356,3 +414,16 @@ export const BpToolTip = ({ payload }) => {
     </ToolTip>
   );
 };
+const info = [
+  { id: 3, color: "orange", info: "below normal" },
+
+  { id: 2, color: "green", info: "normal" },
+  { id: 1, color: "red", info: "above normal" },
+];
+
+function forceLayout(dataset) {
+  return {
+    nodes: dataset.map((item) => ({ name: item.selecteddate })),
+    edges: dataset.map((item, i) => ({ source: i, target: i })),
+  };
+}
